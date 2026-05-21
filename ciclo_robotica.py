@@ -18,7 +18,7 @@ class SimulatedMyCobot:
     def is_controller_connected(self):
         return True
 
-# Intentar cargar librería real, si falla, usamos el simulador
+# Intentar cargar librería real, si falla, simplemente simulamos
 try:
     from pymycobot.mycobot import MyCobot
     mc = MyCobot('/dev/ttyUSB0', 1000000)
