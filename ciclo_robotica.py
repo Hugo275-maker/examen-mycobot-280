@@ -34,7 +34,7 @@ except:
 # ==========================================
 
 INIT_POSE = [0, 0, 0, 0, 0, -45]
-WATCH_POSE = [11.07, -15.64, -18.63, 39.9, 0.7, -32.51]
+WATCH_POSE = [11.07, -20, -18.63, 39.9, 0.7, -32.51]
 
 def capturar_centroide():
     """Lógica de Visión (P6.2): Detección por color HSV"""
