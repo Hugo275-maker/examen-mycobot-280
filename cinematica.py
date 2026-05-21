@@ -96,6 +96,74 @@ class ForwardKinematics:
         plt.axis('equal') 
         plt.show()
 
+class InverseKinematics:
+    def __init__(self):
+        self.A2 = 110.0
+        self.A3 = 96.0
+        self.D1 = 134.65
+
+    def ik_solve(self, x, y, z):
+        j1_rad = math.atan2(y, x)
+        r = math.sqrt(x**2 + y**2)
+        s = z - self.D1
+        
+        num = (r**2 + s**2 - self.A2**2 - self.A3**2)
+        den = (2 * self.A2 * self.A3)
+        cos_j3 = num / den
+        
+        if cos_j3 > 1.0 or cos_j3 < -1.0:
+            return None 
+            
+        sin_j3 = -math.sqrt(1 - cos_j3**2)
+        j3_rad = math.atan2(sin_j3, cos_j3)
+        
+        alpha = math.atan2(s, r)
+        beta = math.atan2(self.A3 * sin_j3, self.A2 + self.A3 * cos_j3)
+        j2_rad = alpha - beta
+        
+        return [math.degrees(j1_rad), math.degrees(j2_rad), math.degrees(j3_rad)]
+
+    def verify_ik_3_positions(self, mc=None):
+        posiciones_target = [
+            [-18.0, 214.6, 142.8],
+            [134.9, -38.8, 394.4],
+            [-7.6, -206.1, 155.0]
+        ]
+        
+        print("\n=== [P3] TABLA DE VALIDACIÓN IK (COORDENADAS REALES) ===")
+        print(f"{'Target (X,Y,Z) mm':<22} | {'IK Analítica (J1,J2,J3)':<30} | {'IK Real Robot':<18} | {'Error Prom (°)':<10}")
+        print("-" * 90)
+        
+        for pos in posiciones_target:
+            x, y, z = pos[0], pos[1], pos[2]
+            sol_analitica = self.ik_solve(x, y, z)
+            
+            if sol_analitica is None:
+                print(f"{str(pos):<22} | Fuera de rango matemático")
+                continue
+                
+            analitica_str = f"({sol_analitica[0]:.1f}°, {sol_analitica[1]:.1f}°, {sol_analitica[2]:.1f}°)"
+            real_str, error_str = "N/A", "N/A"
+            
+            if mc:
+                mc.send_coords([x, y, z, 0, 0, 0], 30, 1)
+                time.sleep(4.0) 
+                angulos_real = mc.get_angles()
+                if angulos_real and len(angulos_real) >= 3:
+                    real_str = f"({angulos_real[0]:.1f}°, {angulos_real[1]:.1f}°, {angulos_real[2]:.1f}°)"
+                    err = (abs(sol_analitica[0] - angulos_real[0]) + 
+                           abs(sol_analitica[1] - angulos_real[1]) + 
+                           abs(sol_analitica[2] - angulos_real[2])) / 3.0
+                    error_str = f"{err:.2f}°"
+                
+                mc.send_angles([11.07, -15.64, -18.63, 39.9, 0.7, -32.51], 30)
+                time.sleep(3.0)
+                    
+            print(f"{str(pos):<22} | {analitica_str:<30} | {real_str:<18} | {error_str:<10}")
+
 if __name__ == "__main__":
     fk = ForwardKinematics()
+    ik = InverseKinematics()
+    
     fk.verify_home_pose()
+    ik.verify_ik_3_positions()
